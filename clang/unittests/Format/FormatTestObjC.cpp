@@ -1514,6 +1514,9 @@ TEST_F(FormatTestObjC, IfNotUnlikely) {
 }
 
 TEST_F(FormatTestObjC, Attributes) {
+  Style.AttributeMacros.push_back("ATTRIBUTE_MACRO");
+
+  // Check '__attribute__' macro directly.
   verifyFormat("__attribute__((objc_subclassing_restricted))\n"
                "@interface Foo\n"
                "@end");
@@ -1522,6 +1525,41 @@ TEST_F(FormatTestObjC, Attributes) {
                "@end");
   verifyFormat("__attribute__((objc_subclassing_restricted))\n"
                "@implementation Foo\n"
+               "@end");
+
+  // Check AttributeMacro gets treated the same, with or without parentheses.
+  verifyFormat("ATTRIBUTE_MACRO\n"
+               "@interface Foo\n"
+               "@end");
+  verifyFormat("ATTRIBUTE_MACRO(X)\n"
+               "@interface Foo\n"
+               "@end");
+
+  // Indenter also needs to understand multiple attribute macros.
+  verifyFormat("ATTRIBUTE_MACRO(X) ATTRIBUTE_MACRO\n"
+               "@interface Foo\n"
+               "@end");
+  verifyFormat("ATTRIBUTE_MACRO ATTRIBUTE_MACRO(X)\n"
+               "@interface Foo\n"
+               "@end");
+
+  Style.ColumnLimit = 30;
+  verifyFormat("ATTRIBUTE_MACRO(X)\n"
+               "ATTRIBUTE_MACRO\n"
+               "@interface Foo\n"
+               "@end");
+  // Note: the following -should- break across multiple lines, but doesn't.
+  // This is added to acknowledge the behavior, but it should be improved.
+  verifyFormat("ATTRIBUTE_MACRO ATTRIBUTE_MACRO(X)\n"
+               "@interface Foo\n"
+               "@end");
+
+  Style.ColumnLimit = 0;
+  verifyFormat("ATTRIBUTE_MACRO(X) ATTRIBUTE_MACRO\n"
+               "@interface Foo\n"
+               "@end");
+  verifyFormat("ATTRIBUTE_MACRO ATTRIBUTE_MACRO(X)\n"
+               "@interface Foo\n"
                "@end");
 }
 

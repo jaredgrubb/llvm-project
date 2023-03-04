@@ -1642,6 +1642,34 @@ TEST_F(TokenAnnotatorTest, UnderstandsTrailingReturnArrow) {
   EXPECT_TOKEN(Tokens[13], tok::arrow, TT_Unknown);
 }
 
+TEST_F(TokenAnnotatorTest, UnderstandsAttributeMacros) {
+  // '__attribute__' has special handling.
+  auto Tokens = annotate("__attribute__(X) void Foo(void);");
+  ASSERT_EQ(Tokens.size(), 11u) << Tokens;
+  EXPECT_TOKEN(Tokens[0], tok::kw___attribute, TT_Unknown);
+  EXPECT_TOKEN(Tokens[1], tok::l_paren, TT_AttributeParen);
+  EXPECT_TOKEN(Tokens[3], tok::r_paren, TT_AttributeParen);
+
+  // Generic macro has no special handling in this location.
+  Tokens = annotate("A(X) void Foo(void);");
+  ASSERT_EQ(Tokens.size(), 11u) << Tokens;
+  EXPECT_TOKEN(Tokens[0], tok::identifier, TT_Unknown);
+  EXPECT_TOKEN(Tokens[1], tok::l_paren, TT_Unknown);
+  // 'TT_FunctionAnnotationRParen' doesn't seem right; fix?
+  EXPECT_TOKEN(Tokens[3], tok::r_paren, TT_FunctionAnnotationRParen);
+
+  // Add a custom AttributeMacro. Test that it has the same behavior.
+  FormatStyle Style = getLLVMStyle();
+  Style.AttributeMacros.push_back("A");
+
+  // An "AttributeMacro" gets annotated like '__attribute__'.
+  Tokens = annotate("A(X) void Foo(void);", Style);
+  ASSERT_EQ(Tokens.size(), 11u) << Tokens;
+  EXPECT_TOKEN(Tokens[0], tok::identifier, TT_AttributeMacro);
+  EXPECT_TOKEN(Tokens[1], tok::l_paren, TT_AttributeParen);
+  EXPECT_TOKEN(Tokens[3], tok::r_paren, TT_AttributeParen);
+}
+
 TEST_F(TokenAnnotatorTest, UnderstandsVerilogOperators) {
   auto Annotate = [this](llvm::StringRef Code) {
     return annotate(Code, getLLVMStyle(FormatStyle::LK_Verilog));
