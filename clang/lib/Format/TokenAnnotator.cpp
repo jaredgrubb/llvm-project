@@ -5514,10 +5514,13 @@ bool TokenAnnotator::canBreakBefore(const AnnotatedLine &Line,
                           tok::less, tok::coloncolon);
   }
 
-  if (Right.is(tok::kw___attribute) ||
-      (Right.is(tok::l_square) && Right.is(TT_AttributeSquare))) {
+  // Breaking before a middle-of-line attribute macro is valid
+  if (Right.isOneOf(tok::kw___attribute, TT_AttributeMacro))
+    return true;
+
+  // Don't split `[[` on C++ attributes
+  if (Right.is(tok::l_square) && Right.is(TT_AttributeSquare))
     return !Left.is(TT_AttributeSquare);
-  }
 
   if (Left.is(tok::identifier) && Right.is(tok::string_literal))
     return true;

@@ -1548,9 +1548,8 @@ TEST_F(FormatTestObjC, Attributes) {
                "ATTRIBUTE_MACRO\n"
                "@interface Foo\n"
                "@end");
-  // Note: the following -should- break across multiple lines, but doesn't.
-  // This is added to acknowledge the behavior, but it should be improved.
-  verifyFormat("ATTRIBUTE_MACRO ATTRIBUTE_MACRO(X)\n"
+  verifyFormat("ATTRIBUTE_MACRO\n"
+               "ATTRIBUTE_MACRO(X)\n"
                "@interface Foo\n"
                "@end");
 
