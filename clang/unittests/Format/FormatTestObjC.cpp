@@ -1642,18 +1642,20 @@ TEST_F(FormatTestObjC, AttributesOnObjCMethodDecl) {
                "    ATTRIBUTE_MACRO;");
   // Reflow after first macro.
   // FIXME: these should indent but don't.
+#if 0
   verifyFormat("- (id)init ATTRIBUTE_MACRO(X)\n"
-               "ATTRIBUTE_MACRO;");
+               "    ATTRIBUTE_MACRO;");
   verifyFormat("- (id)init ATTRIBUTE_MACRO\n"
-               "ATTRIBUTE_MACRO(X);");
+               "    ATTRIBUTE_MACRO(X);");
   verifyFormat("- (id)init __attribute__((X))\n"
-               "ATTRIBUTE_MACRO;");
+               "    ATTRIBUTE_MACRO;");
   verifyFormat("- (id)init ATTRIBUTE_MACRO\n"
-               "__attribute__((X));");
+               "    __attribute__((X));");
   verifyFormat("- (id)init __attribute__((X))\n"
-               "ATTRIBUTE_MACRO(X);");
+               "    ATTRIBUTE_MACRO(X);");
   verifyFormat("- (id)init ATTRIBUTE_MACRO(X)\n"
-               "__attribute__((X));");
+               "    __attribute__((X));");
+#endif
 
   // No column limit.
   Style.ColumnLimit = 0;

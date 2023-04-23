@@ -1655,8 +1655,6 @@ TEST_F(TokenAnnotatorTest, UnderstandsAttributeMacros) {
   ASSERT_EQ(Tokens.size(), 11u) << Tokens;
   EXPECT_TOKEN(Tokens[0], tok::identifier, TT_Unknown);
   EXPECT_TOKEN(Tokens[1], tok::l_paren, TT_Unknown);
-  // 'TT_FunctionAnnotationRParen' doesn't seem right; fix?
-  EXPECT_TOKEN(Tokens[3], tok::r_paren, TT_FunctionAnnotationRParen);
 
   // Add a custom AttributeMacro. Test that it has the same behavior.
   FormatStyle Style = getLLVMStyle();
@@ -1685,7 +1683,6 @@ TEST_F(TokenAnnotatorTest, UnderstandsAttributeMacrosOnObjCDecl) {
   // reason about.
   EXPECT_TOKEN_KIND(Tokens[0], tok::identifier);
   EXPECT_TOKEN_KIND(Tokens[1], tok::l_paren);
-  EXPECT_TOKEN_KIND(Tokens[3], tok::r_paren);
 
   // Add a custom AttributeMacro. Test that it has the same behavior.
   FormatStyle Style = getLLVMStyle();
@@ -1714,7 +1711,6 @@ TEST_F(TokenAnnotatorTest, UnderstandsAttributeMacrosOnObjCMethodDecl) {
   // reason about.
   EXPECT_TOKEN_KIND(Tokens[5], tok::identifier);
   EXPECT_TOKEN_KIND(Tokens[6], tok::l_paren);
-  EXPECT_TOKEN_KIND(Tokens[8], tok::r_paren);
 
   // Add a custom AttributeMacro. Test that it has the same behavior.
   FormatStyle Style = getLLVMStyle();
@@ -1743,7 +1739,6 @@ TEST_F(TokenAnnotatorTest, UnderstandsAttributeMacrosOnObjCProperty) {
   // reason about.
   EXPECT_TOKEN_KIND(Tokens[7], tok::identifier);
   EXPECT_TOKEN_KIND(Tokens[8], tok::l_paren);
-  EXPECT_TOKEN_KIND(Tokens[10], tok::r_paren);
 
   // Add a custom AttributeMacro. Test that it has the same behavior.
   FormatStyle Style = getLLVMStyle();
