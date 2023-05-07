@@ -1357,6 +1357,7 @@ cc_library(
         "lib/Format/FormatTokenLexer.h",
         "lib/Format/FormatTokenSource.h",
         "lib/Format/Macros.h",
+        "lib/Format/ObjCPropertyAttributeOrderFixer.h",
         "lib/Format/QualifierAlignmentFixer.h",
         "lib/Format/UnwrappedLineParser.h",
     ] + glob([

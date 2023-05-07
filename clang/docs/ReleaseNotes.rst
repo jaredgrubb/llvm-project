@@ -857,6 +857,8 @@ clang-format
   the indentation level of the contents of braced init lists.
 - Add ``KeepEmptyLinesAtEOF`` to keep empty lines at end of file.
 - Add ``RemoveParentheses`` to remove redundant parentheses.
+- Add ``ObjCPropertyAttributeOrder`` which can be used to sort ObjC property
+  attributes (like ``nonatomic, strong, nullable``).
 
 libclang
 --------

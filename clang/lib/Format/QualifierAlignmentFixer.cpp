@@ -1,4 +1,4 @@
-//===--- LeftRightQualifierAlignmentFixer.cpp -------------------*- C++--*-===//
+//===--- QualifierAlignmentFixer.cpp ----------------------------*- C++--*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -7,7 +7,7 @@
 //===----------------------------------------------------------------------===//
 ///
 /// \file
-/// This file implements LeftRightQualifierAlignmentFixer, a TokenAnalyzer that
+/// This file implements QualifierAlignmentFixer, a TokenAnalyzer that
 /// enforces either left or right const depending on the style.
 ///
 //===----------------------------------------------------------------------===//
@@ -198,7 +198,7 @@ const FormatToken *LeftRightQualifierAlignmentFixer::analyzeRight(
     // The cases:
     // `Foo() const` -> `Foo() const`
     // `Foo() const final` -> `Foo() const final`
-    // `Foo() const override` -> `Foo() const final`
+    // `Foo() const override` -> `Foo() const override`
     // `Foo() const volatile override` -> `Foo() const volatile override`
     // `Foo() volatile const final` -> `Foo() const volatile final`
     if (PreviousCheck->is(tok::r_paren))
