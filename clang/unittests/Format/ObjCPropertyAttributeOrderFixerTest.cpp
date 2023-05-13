@@ -32,6 +32,21 @@ protected:
                      const FormatStyle &Style = getLLVMStyle()) {
     return TestLexer(Allocator, Buffers, Style).annotate(Code);
   }
+
+  static std::vector<std::string> getAllObjCAttributes() {
+    // These are all the ObjC property attributes that are currently supported in ObjC.
+    // The Fixer doesn't actually know these, it just accepts whatever tokens the user provides.
+    // These are specified here just to be exhaustive on the tokens that are expected, and to 
+    // make sure they are handled correctly. For example, 'class' is a keyword, so it could
+    // get trapped in an unexpected way.
+    return { 
+      "class", "direct", "atomic", "nonatomic",
+      "assign", "retain", "strong", "copy", "weak", "unsafe_unretained",
+      "readonly", "readwrite", "getter", "setter",
+      "nullable", "nonnull", "null_resettable", "null_unspecified", 
+    };
+  }
+
   llvm::SpecificBumpPtrAllocator<FormatToken> Allocator;
   std::vector<std::unique_ptr<llvm::MemoryBuffer>> Buffers;
 };
@@ -43,9 +58,9 @@ TEST_F(ObjCPropertyAttributeOrderFixerTest, ParsesStyleOption) {
   CHECK_PARSE("ObjCPropertyAttributeOrder: [class]", ObjCPropertyAttributeOrder,
               std::vector<std::string>({"class"}));
 
-  CHECK_PARSE("ObjCPropertyAttributeOrder: [direct, strong]",
+  CHECK_PARSE("ObjCPropertyAttributeOrder: [" + llvm::join(getAllObjCAttributes(), ",") + "]",
               ObjCPropertyAttributeOrder,
-              std::vector<std::string>({"direct", "strong"}));
+              getAllObjCAttributes());
 }
 
 TEST_F(ObjCPropertyAttributeOrderFixerTest, SortsSpecifiedAttributes) {
@@ -134,23 +149,23 @@ TEST_F(ObjCPropertyAttributeOrderFixerTest, RemovesDuplicateAttributes) {
                "@property(c, x, b, a, y, b, a, c, y) int p;", Style);
 }
 
-TEST_F(ObjCPropertyAttributeOrderFixerTest, HandlesClassAttribute) {
+TEST_F(ObjCPropertyAttributeOrderFixerTest, HandlesAllAttributes) {
   // 'class' is the only attribute that is a keyword, so make sure it works too.
   FormatStyle Style = getLLVMStyle();
-  Style.ObjCPropertyAttributeOrder = {"a", "class", "c"};
 
-  // No change
-  verifyFormat("@property(class, c) int p;", Style);
-  verifyFormat("@property(a, class) int p;", Style);
-  verifyFormat("@property(a, class, c) int p;", Style);
+  for(auto const& Attribute: getAllObjCAttributes()) {  
+    Style.ObjCPropertyAttributeOrder = { "FIRST", Attribute, "LAST" };
 
-  // Reorder
-  verifyFormat("@property(class, c) int p;", "@property(c, class) int p;",
-               Style);
-  verifyFormat("@property(a, class) int p;", "@property(class, a) int p;",
-               Style);
-  verifyFormat("@property(a, class, c) int p;", "@property(class, c, a) int p;",
-               Style);
+    // No change: specify all attributes in the correct order.
+    verifyFormat("@property(" + Attribute + ", LAST) int p;", Style);
+    verifyFormat("@property(FIRST, " + Attribute + ") int p;", Style);
+    verifyFormat("@property(FIRST, " + Attribute + ", LAST) int p;", Style);
+
+    // Reorder: put 'FIRST' and/or 'LAST' in the wrong spot.
+    verifyFormat("@property(" + Attribute + ", LAST) int p;", "@property(LAST, " + Attribute + ") int p;", Style);
+    verifyFormat("@property(FIRST, " + Attribute + ") int p;", "@property(" + Attribute + ", FIRST) int p;", Style);
+    verifyFormat("@property(FIRST, " + Attribute + ", LAST) int p;", "@property(LAST, " + Attribute + ", FIRST) int p;", Style);
+  }
 }
 
 TEST_F(ObjCPropertyAttributeOrderFixerTest, HandlesCommentsAroundAttributes) {

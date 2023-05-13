@@ -40,9 +40,14 @@ ObjCPropertyAttributeOrderFixer::ObjCPropertyAttributeOrderFixer(
 }
 
 struct ObjCPropertyEntry {
-  StringRef attribute; // eg, "readwrite"
-  StringRef value;     // eg, the "foo" of the attribute "getter=foo"
+  StringRef Attribute; // eg, "readwrite"
+  StringRef Value;     // eg, the "foo" of the attribute "getter=foo"
 };
+
+static bool isObjCPropertyAttribute(const FormatToken *Tok) {
+  // Most attributes look like identifiers, but `class` is a keyword.
+  return Tok->isOneOf(tok::identifier, tok::kw_class);
+}
 
 void ObjCPropertyAttributeOrderFixer::sortPropertyAttributes(
     const SourceManager &SourceMgr, tooling::Replacements &Fixes,
@@ -67,7 +72,7 @@ void ObjCPropertyAttributeOrderFixer::sortPropertyAttributes(
     if (Tok->is(tok::comma)) {
       // Ignore the comma separators.
       continue;
-    } else if (Tok->isOneOf(tok::identifier, tok::kw_class)) {
+    } else if (isObjCPropertyAttribute(Tok)) {
       // Memoize the attribute. (Note that 'class' is a legal attribute!)
       PropertyAttributes.push_back({Tok->TokenText.trim(), StringRef{}});
 
@@ -78,7 +83,7 @@ void ObjCPropertyAttributeOrderFixer::sortPropertyAttributes(
         Tok = Tok->Next;
         if (Tok->Next->is(tok::identifier)) {
           Tok = Tok->Next;
-          PropertyAttributes.back().value = Tok->TokenText.trim();
+          PropertyAttributes.back().Value = Tok->TokenText.trim();
         } else {
           // If we hit any other kind of token, just bail. It's unusual/illegal.
           return;
@@ -101,15 +106,15 @@ void ObjCPropertyAttributeOrderFixer::sortPropertyAttributes(
     return (i == SortOrderMap.end()) ? SortOrderMax : i->getValue();
   };
   llvm::stable_sort(Indices, [&](unsigned LHSI, unsigned RHSI) {
-    return sortIndex(PropertyAttributes[LHSI].attribute) <
-           sortIndex(PropertyAttributes[RHSI].attribute);
+    return sortIndex(PropertyAttributes[LHSI].Attribute) <
+           sortIndex(PropertyAttributes[RHSI].Attribute);
   });
 
   // Deduplicate the attributes.
   Indices.erase(std::unique(Indices.begin(), Indices.end(),
                             [&](unsigned LHSI, unsigned RHSI) {
-                              return PropertyAttributes[LHSI].attribute ==
-                                     PropertyAttributes[RHSI].attribute;
+                              return PropertyAttributes[LHSI].Attribute ==
+                                     PropertyAttributes[RHSI].Attribute;
                             }),
                 Indices.end());
 
@@ -122,10 +127,12 @@ void ObjCPropertyAttributeOrderFixer::sortPropertyAttributes(
   for (unsigned Index : Indices) {
     if (!NewText.empty())
       NewText += ", ";
-    NewText += PropertyAttributes[Index].attribute;
-    if (!PropertyAttributes[Index].value.empty()) {
+
+    NewText += PropertyAttributes[Index].Attribute;
+
+    if (!PropertyAttributes[Index].Value.empty()) {
       NewText += "=";
-      NewText += PropertyAttributes[Index].value;
+      NewText += PropertyAttributes[Index].Value;
     }
   }
 
