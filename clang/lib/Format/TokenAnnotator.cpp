@@ -4557,7 +4557,7 @@ bool TokenAnnotator::spaceRequiredBefore(const AnnotatedLine &Line,
     if (Left.is(TT_ObjCMethodSpecifier))
       return true;
     // Apply this logic for parens that are not function attribute macros.
-    if ((Left.is(tok::r_paren) && Left.isNot(TT_AttributeParen)) &&
+    if (Left.is(tok::r_paren) && Left.isNot(TT_AttributeParen) &&
         canBeObjCSelectorComponent(Right)) {
       // Don't space between ')' and <id> or ')' and 'new'. 'new' is not a
       // keyword in Objective-C, and '+ (instancetype)new;' is a standard class
@@ -5518,7 +5518,7 @@ bool TokenAnnotator::canBreakBefore(const AnnotatedLine &Line,
 
   // Breaking before a middle-of-line attribute macro is valid.
   if (Right.isOneOf(tok::kw___attribute, TT_AttributeMacro))
-    return true;
+    return !Left.is(TT_AttributeSquare);
 
   // Don't split `[[` on C++ attributes.
   if (Right.is(tok::l_square) && Right.is(TT_AttributeSquare))
