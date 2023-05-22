@@ -33,20 +33,6 @@ protected:
     return TestLexer(Allocator, Buffers, Style).annotate(Code);
   }
 
-  static std::vector<std::string> getAllObjCAttributes() {
-    // These are all the ObjC property attributes that are currently supported in ObjC.
-    // The Fixer doesn't actually know these, it just accepts whatever tokens the user provides.
-    // These are specified here just to be exhaustive on the tokens that are expected, and to 
-    // make sure they are handled correctly. For example, 'class' is a keyword, so it could
-    // get trapped in an unexpected way.
-    return { 
-      "class", "direct", "atomic", "nonatomic",
-      "assign", "retain", "strong", "copy", "weak", "unsafe_unretained",
-      "readonly", "readwrite", "getter", "setter",
-      "nullable", "nonnull", "null_resettable", "null_unspecified", 
-    };
-  }
-
   llvm::SpecificBumpPtrAllocator<FormatToken> Allocator;
   std::vector<std::unique_ptr<llvm::MemoryBuffer>> Buffers;
 };
@@ -58,9 +44,33 @@ TEST_F(ObjCPropertyAttributeOrderFixerTest, ParsesStyleOption) {
   CHECK_PARSE("ObjCPropertyAttributeOrder: [class]", ObjCPropertyAttributeOrder,
               std::vector<std::string>({"class"}));
 
-  CHECK_PARSE("ObjCPropertyAttributeOrder: [" + llvm::join(getAllObjCAttributes(), ",") + "]",
+  CHECK_PARSE("ObjCPropertyAttributeOrder: ["
+              "class, direct, atomic, nonatomic, "
+              "assign, retain, strong, copy, weak, unsafe_unretained, "
+              "readonly, readwrite, getter, setter, "
+              "nullable, nonnull, null_resettable, null_unspecified"
+              "]",
               ObjCPropertyAttributeOrder,
-              getAllObjCAttributes());
+              std::vector<std::string>({
+                  "class",
+                  "direct",
+                  "atomic",
+                  "nonatomic",
+                  "assign",
+                  "retain",
+                  "strong",
+                  "copy",
+                  "weak",
+                  "unsafe_unretained",
+                  "readonly",
+                  "readwrite",
+                  "getter",
+                  "setter",
+                  "nullable",
+                  "nonnull",
+                  "null_resettable",
+                  "null_unspecified",
+              }));
 }
 
 TEST_F(ObjCPropertyAttributeOrderFixerTest, SortsSpecifiedAttributes) {
@@ -152,20 +162,196 @@ TEST_F(ObjCPropertyAttributeOrderFixerTest, RemovesDuplicateAttributes) {
 TEST_F(ObjCPropertyAttributeOrderFixerTest, HandlesAllAttributes) {
   // 'class' is the only attribute that is a keyword, so make sure it works too.
   FormatStyle Style = getLLVMStyle();
+  Style.ObjCPropertyAttributeOrder = {"FIRST",
+                                      "class",
+                                      "direct",
+                                      "atomic",
+                                      "nonatomic",
+                                      "assign",
+                                      "retain",
+                                      "strong",
+                                      "copy",
+                                      "weak",
+                                      "unsafe_unretained",
+                                      "readonly",
+                                      "readwrite",
+                                      "getter",
+                                      "setter",
+                                      "nullable",
+                                      "nonnull",
+                                      "null_resettable",
+                                      "null_unspecified",
+                                      "LAST"};
 
-  for(auto const& Attribute: getAllObjCAttributes()) {  
-    Style.ObjCPropertyAttributeOrder = { "FIRST", Attribute, "LAST" };
+  // No change: specify all attributes in the correct order.
+  verifyFormat("@property(class, LAST) int p;", Style);
+  verifyFormat("@property(direct, LAST) int p;", Style);
+  verifyFormat("@property(atomic, LAST) int p;", Style);
+  verifyFormat("@property(nonatomic, LAST) int p;", Style);
+  verifyFormat("@property(assign, LAST) int p;", Style);
+  verifyFormat("@property(retain, LAST) int p;", Style);
+  verifyFormat("@property(strong, LAST) int p;", Style);
+  verifyFormat("@property(copy, LAST) int p;", Style);
+  verifyFormat("@property(weak, LAST) int p;", Style);
+  verifyFormat("@property(unsafe_unretained, LAST) int p;", Style);
+  verifyFormat("@property(readonly, LAST) int p;", Style);
+  verifyFormat("@property(readwrite, LAST) int p;", Style);
+  verifyFormat("@property(getter, LAST) int p;", Style);
+  verifyFormat("@property(setter, LAST) int p;", Style);
+  verifyFormat("@property(nullable, LAST) int p;", Style);
+  verifyFormat("@property(nonnull, LAST) int p;", Style);
+  verifyFormat("@property(null_resettable, LAST) int p;", Style);
+  verifyFormat("@property(null_unspecified, LAST) int p;", Style);
 
-    // No change: specify all attributes in the correct order.
-    verifyFormat("@property(" + Attribute + ", LAST) int p;", Style);
-    verifyFormat("@property(FIRST, " + Attribute + ") int p;", Style);
-    verifyFormat("@property(FIRST, " + Attribute + ", LAST) int p;", Style);
+  verifyFormat("@property(FIRST, class) int p;", Style);
+  verifyFormat("@property(FIRST, direct) int p;", Style);
+  verifyFormat("@property(FIRST, atomic) int p;", Style);
+  verifyFormat("@property(FIRST, nonatomic) int p;", Style);
+  verifyFormat("@property(FIRST, assign) int p;", Style);
+  verifyFormat("@property(FIRST, retain) int p;", Style);
+  verifyFormat("@property(FIRST, strong) int p;", Style);
+  verifyFormat("@property(FIRST, copy) int p;", Style);
+  verifyFormat("@property(FIRST, weak) int p;", Style);
+  verifyFormat("@property(FIRST, unsafe_unretained) int p;", Style);
+  verifyFormat("@property(FIRST, readonly) int p;", Style);
+  verifyFormat("@property(FIRST, readwrite) int p;", Style);
+  verifyFormat("@property(FIRST, getter) int p;", Style);
+  verifyFormat("@property(FIRST, setter) int p;", Style);
+  verifyFormat("@property(FIRST, nullable) int p;", Style);
+  verifyFormat("@property(FIRST, nonnull) int p;", Style);
+  verifyFormat("@property(FIRST, null_resettable) int p;", Style);
+  verifyFormat("@property(FIRST, null_unspecified) int p;", Style);
 
-    // Reorder: put 'FIRST' and/or 'LAST' in the wrong spot.
-    verifyFormat("@property(" + Attribute + ", LAST) int p;", "@property(LAST, " + Attribute + ") int p;", Style);
-    verifyFormat("@property(FIRST, " + Attribute + ") int p;", "@property(" + Attribute + ", FIRST) int p;", Style);
-    verifyFormat("@property(FIRST, " + Attribute + ", LAST) int p;", "@property(LAST, " + Attribute + ", FIRST) int p;", Style);
-  }
+  verifyFormat("@property(FIRST, class, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, direct, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, atomic, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, nonatomic, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, assign, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, retain, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, strong, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, copy, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, weak, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, unsafe_unretained, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, readonly, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, readwrite, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, getter, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, setter, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, nullable, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, nonnull, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, null_resettable, LAST) int p;", Style);
+  verifyFormat("@property(FIRST, null_unspecified, LAST) int p;", Style);
+
+  // Reorder: put 'FIRST' and/or 'LAST' in the wrong spot.
+  verifyFormat("@property(class, LAST) int p;", "@property(LAST, class) int p;",
+               Style);
+  verifyFormat("@property(direct, LAST) int p;",
+               "@property(LAST, direct) int p;", Style);
+  verifyFormat("@property(atomic, LAST) int p;",
+               "@property(LAST, atomic) int p;", Style);
+  verifyFormat("@property(nonatomic, LAST) int p;",
+               "@property(LAST, nonatomic) int p;", Style);
+  verifyFormat("@property(assign, LAST) int p;",
+               "@property(LAST, assign) int p;", Style);
+  verifyFormat("@property(retain, LAST) int p;",
+               "@property(LAST, retain) int p;", Style);
+  verifyFormat("@property(strong, LAST) int p;",
+               "@property(LAST, strong) int p;", Style);
+  verifyFormat("@property(copy, LAST) int p;", "@property(LAST, copy) int p;",
+               Style);
+  verifyFormat("@property(weak, LAST) int p;", "@property(LAST, weak) int p;",
+               Style);
+  verifyFormat("@property(unsafe_unretained, LAST) int p;",
+               "@property(LAST, unsafe_unretained) int p;", Style);
+  verifyFormat("@property(readonly, LAST) int p;",
+               "@property(LAST, readonly) int p;", Style);
+  verifyFormat("@property(readwrite, LAST) int p;",
+               "@property(LAST, readwrite) int p;", Style);
+  verifyFormat("@property(getter, LAST) int p;",
+               "@property(LAST, getter) int p;", Style);
+  verifyFormat("@property(setter, LAST) int p;",
+               "@property(LAST, setter) int p;", Style);
+  verifyFormat("@property(nullable, LAST) int p;",
+               "@property(LAST, nullable) int p;", Style);
+  verifyFormat("@property(nonnull, LAST) int p;",
+               "@property(LAST, nonnull) int p;", Style);
+  verifyFormat("@property(null_resettable, LAST) int p;",
+               "@property(LAST, null_resettable) int p;", Style);
+  verifyFormat("@property(null_unspecified, LAST) int p;",
+               "@property(LAST, null_unspecified) int p;", Style);
+
+  verifyFormat("@property(FIRST, class) int p;",
+               "@property(class, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, direct) int p;",
+               "@property(direct, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, atomic) int p;",
+               "@property(atomic, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, nonatomic) int p;",
+               "@property(nonatomic, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, assign) int p;",
+               "@property(assign, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, retain) int p;",
+               "@property(retain, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, strong) int p;",
+               "@property(strong, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, copy) int p;", "@property(copy, FIRST) int p;",
+               Style);
+  verifyFormat("@property(FIRST, weak) int p;", "@property(weak, FIRST) int p;",
+               Style);
+  verifyFormat("@property(FIRST, unsafe_unretained) int p;",
+               "@property(unsafe_unretained, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, readonly) int p;",
+               "@property(readonly, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, readwrite) int p;",
+               "@property(readwrite, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, getter) int p;",
+               "@property(getter, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, setter) int p;",
+               "@property(setter, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, nullable) int p;",
+               "@property(nullable, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, nonnull) int p;",
+               "@property(nonnull, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, null_resettable) int p;",
+               "@property(null_resettable, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, null_unspecified) int p;",
+               "@property(null_unspecified, FIRST) int p;", Style);
+
+  verifyFormat("@property(FIRST, class, LAST) int p;",
+               "@property(LAST, class, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, direct, LAST) int p;",
+               "@property(LAST, direct, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, atomic, LAST) int p;",
+               "@property(LAST, atomic, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, nonatomic, LAST) int p;",
+               "@property(LAST, nonatomic, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, assign, LAST) int p;",
+               "@property(LAST, assign, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, retain, LAST) int p;",
+               "@property(LAST, retain, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, strong, LAST) int p;",
+               "@property(LAST, strong, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, copy, LAST) int p;",
+               "@property(LAST, copy, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, weak, LAST) int p;",
+               "@property(LAST, weak, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, unsafe_unretained, LAST) int p;",
+               "@property(LAST, unsafe_unretained, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, readonly, LAST) int p;",
+               "@property(LAST, readonly, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, readwrite, LAST) int p;",
+               "@property(LAST, readwrite, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, getter, LAST) int p;",
+               "@property(LAST, getter, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, setter, LAST) int p;",
+               "@property(LAST, setter, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, nullable, LAST) int p;",
+               "@property(LAST, nullable, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, nonnull, LAST) int p;",
+               "@property(LAST, nonnull, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, null_resettable, LAST) int p;",
+               "@property(LAST, null_resettable, FIRST) int p;", Style);
+  verifyFormat("@property(FIRST, null_unspecified, LAST) int p;",
+               "@property(LAST, null_unspecified, FIRST) int p;", Style);
 }
 
 TEST_F(ObjCPropertyAttributeOrderFixerTest, HandlesCommentsAroundAttributes) {
