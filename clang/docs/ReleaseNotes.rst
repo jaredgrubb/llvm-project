@@ -857,6 +857,8 @@ clang-format
   the indentation level of the contents of braced init lists.
 - Add ``KeepEmptyLinesAtEOF`` to keep empty lines at end of file.
 - Add ``RemoveParentheses`` to remove redundant parentheses.
+- Improve handling of ``AttributeMacros`` to behave more consistently like
+  regular attribute macros (aka ``__attribute__``)
 
 libclang
 --------

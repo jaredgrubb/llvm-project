@@ -228,8 +228,10 @@ struct ParenState {
   /// The position of the last space on each level.
   ///
   /// Used e.g. to break like:
+  /// \code
   /// functionCall(Parameter, otherCall(
   ///                             OtherParameter));
+  /// \endcode
   unsigned LastSpace;
 
   /// If a block relative to this parenthesis level gets wrapped, indent
